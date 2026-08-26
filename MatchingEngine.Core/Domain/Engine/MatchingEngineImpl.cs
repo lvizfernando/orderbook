@@ -18,4 +18,14 @@ public class MatchingEngineImpl : IMatchingEngine
     {
         throw new NotImplementedException();
     }
+
+    public List<Order> GetBuyOrders()
+    {
+        throw new NotImplementedException();
+    }
+
+    public List<Order> GetSellOrders()
+    {
+        throw new NotImplementedException();
+    }
 }
