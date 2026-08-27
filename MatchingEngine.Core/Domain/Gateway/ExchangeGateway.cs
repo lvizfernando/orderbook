@@ -15,6 +15,6 @@ public class ExchangeGateway
     public async Task<List<Trade>> ReceiveOrderAsync(Order order)
     {
         // TODO: chamada thread-safe para _engine.ProcessOrder(order)
-        throw new NotImplementedException();
+        return _engine.ProcessOrder(order);
     }
 }
