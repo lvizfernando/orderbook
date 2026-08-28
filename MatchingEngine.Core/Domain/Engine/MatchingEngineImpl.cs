@@ -8,7 +8,6 @@ public class MatchingEngineImpl : IMatchingEngine
     private static IComparer<decimal> buyPriceComparer = Comparer<decimal>.Create((a,b) => b.CompareTo(a));
     private SortedDictionary<decimal, Queue<Order>> buyOrders = new SortedDictionary<decimal, Queue<Order>>(buyPriceComparer);
     private SortedDictionary<decimal, Queue<Order>> sellOrders = new SortedDictionary<decimal, Queue<Order>>();
-    private int quantidadeTrade = 0;
 
     private void AddOrderToBook(SortedDictionary<decimal, Queue<Order>> book, Order order)
     {
@@ -25,6 +24,8 @@ public class MatchingEngineImpl : IMatchingEngine
     }
     public List<Trade> ProcessOrder(Order order)
     {
+        int quantidadeTrade = 0;
+
         if(order.Side == Side.Buy)
         {
             var matchingSellOrders = sellOrders.FirstOrDefault().Value;

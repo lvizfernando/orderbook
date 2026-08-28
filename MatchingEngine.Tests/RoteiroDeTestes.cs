@@ -1,6 +1,7 @@
 using MatchingEngine.Core.Domain;
 using MatchingEngine.Core.Engine;
 using MatchingEngine.Core.Gateway;
+using Microsoft.VisualStudio.TestPlatform.Common.Utilities;
 
 namespace MatchingEngine.Tests;
 
@@ -191,5 +192,48 @@ public class RoteiroDeTestes
 
         Assert.Single(tradesFromBuyOrder);
         Assert.Equal(sellOrderA.Id, tradesFromBuyOrder[0].MakerOrderId); // Garante que a ordem de venda mais antiga foi casada primeiro
+    }
+
+    [Fact]
+    public async Task PrioridadeDeTempoFIFOCompra()
+    {
+        Order buyOrderA = new Order
+        {
+            Id = Guid.NewGuid(),
+            Side = Side.Buy,
+            Price = 20.0m,
+            Quantity = 1,
+            Timestamp = 1000
+        };
+
+        Order buyOrderB = new Order
+        {
+            Id = Guid.NewGuid(),
+            Side = Side.Buy,
+            Price = 20.0m,
+            Quantity = 1,
+            Timestamp = 10001
+        };
+
+        Order sellOrder = new Order
+        {
+            Id = Guid.NewGuid(),
+            Side = Side.Sell,
+            Price = 19.0m,
+            Quantity = 1,
+            Timestamp = 10002
+        }; 
+
+        MatchingEngineImpl engine = new MatchingEngineImpl();
+        ExchangeGateway gateway = new ExchangeGateway(engine);
+
+        var tradesFromBuyOrder = await gateway.ReceiveOrderAsync(buyOrderA);
+        var tradesFromBuyOrderB = await gateway.ReceiveOrderAsync(buyOrderB);
+        var result = await gateway.ReceiveOrderAsync(sellOrder);
+
+        Assert.Empty(tradesFromBuyOrder);
+        Assert.Single(result);
+        Assert.Equal(buyOrderA.Id, result[0].MakerOrderId);
+
     }
 }
