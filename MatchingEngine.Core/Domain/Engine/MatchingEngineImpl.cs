@@ -11,7 +11,7 @@ public class MatchingEngineImpl : IMatchingEngine
 
     private void AddOrderToBook(SortedDictionary<decimal, Queue<Order>> book, Order order)
     {
-        if (book.TryGetValue(order.Price, out Queue<Order> queueExist))
+        if (book.TryGetValue(order.Price, out Queue<Order>? queueExist))
         {
             queueExist.Enqueue(order);
         }
@@ -24,7 +24,7 @@ public class MatchingEngineImpl : IMatchingEngine
     }
     public List<Trade> ProcessOrder(Order order)
     {
-        int quantidadeTrade = 0;
+        int quantidadeTrade;
 
         if(order.Side == Side.Buy)
         {
@@ -76,7 +76,6 @@ public class MatchingEngineImpl : IMatchingEngine
                     Quantity = quantidadeTrade,
                 };
 
-                quantidadeTrade = 0;
                 return new List<Trade> { trade };
             } 
         }
@@ -130,7 +129,6 @@ public class MatchingEngineImpl : IMatchingEngine
                     Quantity = quantidadeTrade,
                 };
 
-                quantidadeTrade = 0;
                 return new List<Trade> { trade };
             }
         }
