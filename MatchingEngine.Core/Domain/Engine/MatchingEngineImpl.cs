@@ -49,7 +49,7 @@ public class MatchingEngineImpl : IMatchingEngine
 
                 var trade = new Trade
                 {
-                    Id = new Guid(),
+                    Id = Guid.NewGuid(),
                     MakerOrderId = sellOrder.Id,
                     TakerOrderId = order.Id,
                     Price = sellOrder.Price,
@@ -98,7 +98,7 @@ public class MatchingEngineImpl : IMatchingEngine
 
                 var trade = new Trade
                 {
-                    Id = new Guid(),
+                    Id = Guid.NewGuid(),
                     MakerOrderId = buyOrder.Id,
                     TakerOrderId = order.Id,
                     Price = buyOrder.Price,
