@@ -5,33 +5,48 @@ namespace MatchingEngine.Core.Engine;
 
 public class MatchingEngineImpl : IMatchingEngine
 {
-    // TODO: escolher estrutura de dados do book (Buy side / Sell side)
-    // pensando em Big-O de inserção e busca do melhor preço.
-
-    private SortedDictionary<Tuple<decimal, long>, List<Order>> buyOrders = new SortedDictionary<Tuple<decimal, long>, List<Order>>();
-    private SortedDictionary<Tuple<decimal, long>, List<Order>> sellOrders = new SortedDictionary<Tuple<decimal, long>, List<Order>>();
+    private static IComparer<decimal> buyPriceComparer = Comparer<decimal>.Create((a,b) => b.CompareTo(a));
+    private SortedDictionary<decimal, Queue<Order>> buyOrders = new SortedDictionary<decimal, Queue<Order>>(buyPriceComparer);
+    private SortedDictionary<decimal, Queue<Order>> sellOrders = new SortedDictionary<decimal, Queue<Order>>();
     private int quantidadeTrade = 0;
 
+    private void AddOrderToBook(SortedDictionary<decimal, Queue<Order>> book, Order order)
+    {
+        if (book.TryGetValue(order.Price, out Queue<Order> queueExist))
+        {
+            queueExist.Enqueue(order);
+        }
+        else
+        {
+            var queueNew = new Queue<Order>();
+            queueNew.Enqueue(order);
+            book.Add(order.Price, queueNew);
+        }
+    }
     public List<Trade> ProcessOrder(Order order)
     {
         if(order.Side == Side.Buy)
         {
             var matchingSellOrders = sellOrders.FirstOrDefault().Value;
 
-            if(matchingSellOrders == null || matchingSellOrders.Count == 0 || matchingSellOrders[0].Price > order.Price)
+            if(matchingSellOrders == null || matchingSellOrders.Count == 0 || matchingSellOrders.Peek().Price > order.Price)
             {
-                buyOrders.Add(new Tuple<decimal, long>(order.Price, order.Timestamp), new List<Order> { order });
+                AddOrderToBook(buyOrders, order);
                 return new List<Trade>();
             }
             else
             {
-                var sellOrder = matchingSellOrders[0];
+                var sellOrder = matchingSellOrders.Peek();
                 
                 if(order.Quantity > sellOrder.Quantity)
                 {
                     order.Quantity -= sellOrder.Quantity;
-                    matchingSellOrders.RemoveAt(0);
-                    buyOrders.Add(new Tuple<decimal, long>(order.Price, order.Timestamp), new List<Order> { order });
+                    matchingSellOrders.Dequeue();
+                    if(matchingSellOrders.Count == 0)
+                    {
+                        sellOrders.Remove(sellOrder.Price);
+                    }
+                    AddOrderToBook(buyOrders, order);
                     quantidadeTrade = sellOrder.Quantity;
                 }
                 else if(order.Quantity < sellOrder.Quantity)
@@ -42,7 +57,11 @@ public class MatchingEngineImpl : IMatchingEngine
                 }
                 else
                 {
-                    sellOrders.Remove(new Tuple<decimal, long>(sellOrder.Price, sellOrder.Timestamp));
+                    matchingSellOrders.Dequeue();
+                    if(matchingSellOrders.Count == 0)
+                    {
+                        sellOrders.Remove(sellOrder.Price);
+                    }
                     quantidadeTrade = order.Quantity;
                     order.Quantity = 0;
                 }
@@ -62,24 +81,26 @@ public class MatchingEngineImpl : IMatchingEngine
         }
         else
         {
-            var matchingBuyOrders = buyOrders.LastOrDefault().Value;
+            var matchingBuyOrders = buyOrders.FirstOrDefault().Value;
 
-            if(matchingBuyOrders == null || matchingBuyOrders.Count == 0 || matchingBuyOrders[0].Price < order.Price)
+            if(matchingBuyOrders == null || matchingBuyOrders.Count == 0 || matchingBuyOrders.Peek().Price < order.Price)
             {
-                sellOrders.Add(new Tuple<decimal, long>(order.Price, order.Timestamp), new List<Order> { order });
+                AddOrderToBook(sellOrders, order);
                 return new List<Trade>();
             }
             else
             {
-                var buyOrder = matchingBuyOrders[0];
+                var buyOrder = matchingBuyOrders.Peek();
                 
                 if(order.Quantity > buyOrder.Quantity)
                 {
                     order.Quantity -= buyOrder.Quantity;
-                    matchingBuyOrders.RemoveAt(0);
-
-                    sellOrders.Add(new Tuple<decimal, long>(order.Price, order.Timestamp), new List<Order> { order });
-
+                    matchingBuyOrders.Dequeue();
+                    if(matchingBuyOrders.Count == 0)
+                    {
+                        buyOrders.Remove(buyOrder.Price);
+                    }
+                    AddOrderToBook(sellOrders, order);
                     quantidadeTrade = buyOrder.Quantity;
                 }
                 else if(order.Quantity < buyOrder.Quantity)
@@ -90,8 +111,11 @@ public class MatchingEngineImpl : IMatchingEngine
                 }
                 else
                 {
-                    buyOrders.Remove(new Tuple<decimal, long>(buyOrder.Price, buyOrder.Timestamp));
-                    matchingBuyOrders.RemoveAt(0);
+                    matchingBuyOrders.Dequeue();
+                    if(matchingBuyOrders.Count == 0)
+                    {
+                        buyOrders.Remove(buyOrder.Price);
+                    }
                     quantidadeTrade = order.Quantity;
                     order.Quantity = 0;
                 }
