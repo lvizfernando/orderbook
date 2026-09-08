@@ -5,6 +5,7 @@ namespace MatchingEngine.Core.Engine;
 
 public class MatchingEngineImpl : IMatchingEngine
 {
+    private static readonly List<Trade> NoTrades = new();
     private readonly Lock bookLock = new ();
     private static IComparer<decimal> buyPriceComparer = Comparer<decimal>.Create((a,b) => b.CompareTo(a));
     private SortedDictionary<decimal, Queue<Order>> buyOrders = new SortedDictionary<decimal, Queue<Order>>(buyPriceComparer);
@@ -39,7 +40,7 @@ public class MatchingEngineImpl : IMatchingEngine
                 if(matchingSellOrders == null || matchingSellOrders.Count == 0 || matchingSellOrders.Peek().Price > order.Price)
                 {
                     AddOrderToBook(buyOrders, order);
-                    return new List<Trade>();
+                    return NoTrades;
                 }
                 else
                 {
@@ -93,7 +94,7 @@ public class MatchingEngineImpl : IMatchingEngine
                 if(matchingBuyOrders == null || matchingBuyOrders.Count == 0 || matchingBuyOrders.Peek().Price < order.Price)
                 {
                     AddOrderToBook(sellOrders, order);
-                    return new List<Trade>();
+                    return NoTrades;
                 }
                 else
                 {
