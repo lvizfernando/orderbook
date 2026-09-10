@@ -39,3 +39,22 @@ Mutar um objeto compartilhado só é seguro se houver certeza de que ninguém ma
 
 É exatamente isso que a arquitetura do gateway garante. Como só uma thread por vez toca o book, essa mutação nunca vira uma condição de corrida.
 
+
+### Questão 3 — Gestão de Concorrência
+
+> *O sistema sobreviveu ao Chaos Test? A abordagem de locking (se utilizada) estrangulou a performance do motor?*
+
+Na versão 1 do nosso código deixamos apenas o `lock` cuidar da concorrência lá no `ProcessOrder`. O código até funcionava, o resultado era correto, mas estava muito lento, toda thread estava disputando pelo mesmo lock, e esse lock cobria a operação inteira de matching. O trabalho já acontecia em série, mas como tínhamos somente o lock cuidando de tudo acabava prejudicando a performance.
+
+Pesquisando, achamos a `BlockingCollection`, que tem uma indicação justamente para quando temos N produtores e um ou mais consumidores. É responsabilidade dessa estrutura manter tudo sincronizado, sem precisarmos escrever o lock. Usamos ela no gateway e ficamos com N threads produtoras e apenas uma cuidando do book — uma única thread consumindo a fila e chamando o `ProcessOrder`. Assim matamos a disputa por lock.
+
+Ao utilizarmos o `TaskCompletionSource` em conjunto com a `BlockingCollection`, a função de adicionar no produtor e o processamento ficam desacoplados no tempo, mas ainda assim quem chamou consegue saber quando a sua ordem terminou e qual foi o resultado. Isso é o que permite não quebrar a paralelização do teste já que continuamos esperando tudo terminar antes de validar a integridade.
+
+O resultado medido através dos testes:
+
+```
+Resumo do teste: total: 7; falhou: 0; bem-sucedido: 7; ignorado: 0; duração: 0,9s
+
+```
+
+Sem deadlock e sem corrompimentos a validação de integridade fecha com o que precismamos `o que sobrou no book == o que entrou − o que foi executado` nos dois lados.
